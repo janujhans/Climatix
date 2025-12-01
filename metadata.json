@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Climexa",
+  "description": "A responsive, AI-powered weather dashboard using Gemini 2.5 Flash with Google Search Grounding to provide real-time weather data and forecasts.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
