@@ -404,11 +404,11 @@ const geocodeCity = async (city: string): Promise<{ lat: number; lon: number; na
 // Fetch real weather data from Open-Meteo API (FREE, no API key needed!)
 const fetchFromOpenMeteo = async (city: string): Promise<WeatherData> => {
   // Step 1: Geocode the city
-  const { lat, lon, name, country, timezone } = await geocodeCity(city);
+  const { lat, lon, name, country, timezone: geoTimezone } = await geocodeCity(city);
   const locationName = country ? `${name}, ${country}` : name;
 
-  // Step 2: Fetch weather data
-  const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&timezone=${timezone}&forecast_days=7`;
+  // Step 2: Fetch weather data - Always use "auto" to let Open-Meteo determine the correct timezone
+  const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&timezone=auto&forecast_days=7`;
   
   const response = await fetch(weatherUrl);
   const data = await response.json();
@@ -416,6 +416,10 @@ const fetchFromOpenMeteo = async (city: string): Promise<WeatherData> => {
   if (!data.current) {
     throw new Error("Unable to fetch weather data");
   }
+  
+  // Get the actual timezone from Open-Meteo response (this is always accurate!)
+  const actualTimezone = data.timezone || geoTimezone || "UTC";
+  console.log(`Timezone for ${locationName}: ${actualTimezone}`);
 
   const current = data.current;
   const hourly = data.hourly;
@@ -473,7 +477,7 @@ const fetchFromOpenMeteo = async (city: string): Promise<WeatherData> => {
     location: locationName,
     lat,
     lon,
-    timezone: timezone === "auto" ? Intl.DateTimeFormat().resolvedOptions().timeZone : timezone,
+    timezone: actualTimezone, // Use the timezone from Open-Meteo API response
     dailyTip: getWeatherTip(current.temperature_2m, weatherInfo.condition, uvIndex),
     current: {
       temp: Math.round(current.temperature_2m),
