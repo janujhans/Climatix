@@ -45,12 +45,12 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ isDark, weatherCondition }) =
 
   useEffect(scrollToBottom, [messages]);
 
-  // Format message text with basic markdown-like formatting
+
   const formatMessage = (text: string) => {
     return text.split('\n').map((line, i) => {
-      // Bold text
+    
       let formatted = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      // Bullet points
+      
       if (line.trim().startsWith('•')) {
         return <div key={i} className="ml-2 flex items-start gap-2"><span className="text-blue-500">•</span><span dangerouslySetInnerHTML={{ __html: formatted.replace('•', '') }} /></div>;
       }
@@ -58,12 +58,12 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ isDark, weatherCondition }) =
     });
   };
 
-  // Format timestamp
+  
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Simulate typing effect
+  
   const simulateTyping = async (response: string): Promise<void> => {
     return new Promise((resolve) => {
       const typingTime = Math.min(response.length * 15, 2000); // Max 2 seconds
@@ -71,7 +71,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ isDark, weatherCondition }) =
     });
   };
 
-  // Core logic to process a message
+  
   const processMessage = async (text: string) => {
     if (!text.trim() || isTyping) return;
 
