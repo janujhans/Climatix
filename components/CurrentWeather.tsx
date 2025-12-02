@@ -472,19 +472,39 @@ const CurrentWeather: React.FC<CurrentWeatherProps> = ({ data, unit }) => {
             <div className="flex items-center space-x-2 opacity-90 bg-white/10 px-4 py-1.5 rounded-full backdrop-blur-sm shadow-sm border border-white/10">
                <span className="text-xs font-semibold tracking-wide uppercase">{location}</span>
             </div>
-            {/* Show city's local time */}
+            {/* Show city's local time with GMT offset */}
             <div className="text-white/70 text-xs font-medium">
-              🕐 Local Time: {(() => {
+              🕐 {(() => {
                 try {
                   const tz = data.timezone && data.timezone.includes('/') && data.timezone !== 'auto' 
                     ? data.timezone 
                     : undefined;
-                  return new Date().toLocaleTimeString('en-US', { 
+                  
+                  const now = new Date();
+                  const time = now.toLocaleTimeString('en-US', { 
                     hour: '2-digit', 
                     minute: '2-digit',
                     hour12: true,
                     timeZone: tz
                   });
+                  
+                  // Get GMT offset
+                  let gmtOffset = '';
+                  if (tz) {
+                    try {
+                      const offsetFormatter = new Intl.DateTimeFormat('en-US', {
+                        timeZone: tz,
+                        timeZoneName: 'shortOffset'
+                      });
+                      const parts = offsetFormatter.formatToParts(now);
+                      const tzPart = parts.find((p) => p.type === 'timeZoneName');
+                      if (tzPart) {
+                        gmtOffset = ` (${tzPart.value})`;
+                      }
+                    } catch {}
+                  }
+                  
+                  return `${time}${gmtOffset}`;
                 } catch {
                   return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                 }

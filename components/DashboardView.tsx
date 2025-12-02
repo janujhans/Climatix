@@ -26,7 +26,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ weatherState, currentTime
   console.log('Weather data timezone:', rawTimezone, '| Valid:', isValidTimezone, '| Using:', cityTimezone || 'local');
   
   // Calculate city time using useMemo for performance
-  const { formattedTime, formattedDate, cityHour } = useMemo(() => {
+  const { formattedTime, formattedDate, cityHour, gmtOffset } = useMemo(() => {
     const now = new Date();
     
     try {
@@ -51,6 +51,41 @@ const DashboardView: React.FC<DashboardViewProps> = ({ weatherState, currentTime
       const time = now.toLocaleTimeString('en-US', timeOptions);
       const date = now.toLocaleDateString('en-US', dateOptions);
       
+      // Get GMT offset for the timezone
+      let offset = '';
+      if (cityTimezone) {
+        try {
+          // Get the timezone offset in the format like "GMT+11" or "GMT-5"
+          const offsetFormatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: cityTimezone,
+            timeZoneName: 'shortOffset'
+          });
+          const parts = offsetFormatter.formatToParts(now);
+          const tzPart = parts.find((p) => p.type === 'timeZoneName');
+          if (tzPart) {
+            offset = tzPart.value; // e.g., "GMT+11"
+          }
+        } catch (e) {
+          // Fallback: calculate offset manually
+          try {
+            const localTime = now.getTime();
+            const localOffset = now.getTimezoneOffset() * 60000;
+            const utc = localTime + localOffset;
+            
+            const cityFormatter = new Intl.DateTimeFormat('en-US', {
+              timeZone: cityTimezone,
+              hour: 'numeric',
+              minute: 'numeric',
+              hour12: false
+            });
+            const cityTimeStr = cityFormatter.format(now);
+            offset = `(${cityTimezone.replace('_', ' ')})`;
+          } catch {
+            offset = '';
+          }
+        }
+      }
+      
       // Get hour for greeting
       let hour = now.getHours();
       if (cityTimezone) {
@@ -70,13 +105,14 @@ const DashboardView: React.FC<DashboardViewProps> = ({ weatherState, currentTime
         }
       }
       
-      return { formattedTime: time, formattedDate: date, cityHour: hour };
+      return { formattedTime: time, formattedDate: date, cityHour: hour, gmtOffset: offset };
     } catch (e) {
       console.error('Timezone formatting error:', e);
       return { 
         formattedTime: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }), 
         formattedDate: now.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
-        cityHour: now.getHours()
+        cityHour: now.getHours(),
+        gmtOffset: ''
       };
     }
   }, [cityTimezone, currentTime]);
@@ -108,13 +144,13 @@ const DashboardView: React.FC<DashboardViewProps> = ({ weatherState, currentTime
                   {weatherState.loading && !weatherState.data ? '--:--' : formattedTime}
                 </h1>
                 <p className="text-gray-500 dark:text-gray-400 font-medium mb-1">
-                  {weatherState.loading && !weatherState.data ? 'Loading...' : formattedDate}
+                  {weatherState.loading && !weatherState.data ? 'Loading...' : (
+                    <>
+                      {formattedDate}
+                      {gmtOffset && <span className="text-blue-500 dark:text-blue-400 ml-2">({gmtOffset})</span>}
+                    </>
+                  )}
                 </p>
-                {cityTimezone && (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-                    🌍 Timezone: {cityTimezone.replace('_', ' ')}
-                  </p>
-                )}
               </div>
               
               <div className="flex items-center gap-4">
